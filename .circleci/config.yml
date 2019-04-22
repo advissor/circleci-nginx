@@ -1,15 +1,34 @@
-version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/python:latest
-    working_directory: ~/my_app
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run: 
-          pip install awscli --upgrade --user;
-          export PATH=$PATH:~/.local/bin;
-          eval $(aws ecr get-login --region us-west-1 --no-include-email);
-          docker build -t 293713961925.dkr.ecr.us-west-1.amazonaws.com/nginx:latest .;
-          docker push 293713961925.dkr.ecr.us-west-1.amazonaws.com/nginx:latest
+machine:
+  services:
+    - docker
+
+dependencies:
+  post:
+    - docker build .
+
+test:
+  post:
+    - docker run -d -p 80:80 --name nginx-test nginx:alpine; sleep 10
+    - curl --retry 10 --retry-delay 5 localhost:8080 | grep "nginx!"
+
+deployment:
+  prod:
+    branch: master
+    commands:
+      - ./deploy.sh
+
+# version: 2
+# jobs:
+#   build:
+#     docker:
+#       - image: circleci/python:latest
+#     working_directory: ~/my_app
+#     steps:
+#       - checkout
+#       - setup_remote_docker
+#       - run: 
+#           pip install awscli --upgrade --user;
+#           export PATH=$PATH:~/.local/bin;
+#           eval $(aws ecr get-login --region us-west-1 --no-include-email);
+#           docker build -t 293713961925.dkr.ecr.us-west-1.amazonaws.com/nginx:latest .;
+#           docker push 293713961925.dkr.ecr.us-west-1.amazonaws.com/nginx:latest
